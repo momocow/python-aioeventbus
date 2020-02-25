@@ -14,7 +14,7 @@ with open(os.path.join(here, NAME, '__version__.py')) as f:
 
 setup(
     name=NAME,
-    description="simple in-process event bus system",
+    description="Simple, in-process, event-driven programming for Python based on asyncio.",
     long_description=LONG_DESC,
     long_description_content_type="text/markdown",
     version=ABOUT["__version__"],
