@@ -8,7 +8,7 @@ from .types import EventClass, Handler
 
 
 class EventBus:
-    def __init(self):
+    def __init__(self):
         self.__listeners: List[Listener] = []
 
     def register(self, *listeners: Listener):

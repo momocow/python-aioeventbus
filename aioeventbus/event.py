@@ -7,5 +7,5 @@ class Event(ABC):
         return self.__class__.__name__
 
     def __repr__(self) -> str:
-        return "<Event {0}>".format(self.__class__.name)
+        return "<Event {0}>".format(self.name)
     
