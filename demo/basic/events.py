@@ -5,6 +5,7 @@ from aioeventbus import Event
 
 class LifecycleEvent(Event):
     def __init__(self):
+        super().__init__()
         self.time = time.time()
 
 
