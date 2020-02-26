@@ -6,9 +6,11 @@ from events import LifecycleEvent, ShutdownEvent, StartupEvent
 
 listener_1 = Listener()
 listener_2 = Listener()
+listener_3 = Listener()
 
 class LonelyEvent(Event):
     pass
+
 
 @listener_1.on(LifecycleEvent)
 async def on_lifecycle():
@@ -27,12 +29,19 @@ async def on_shutdown():
 
     event["bye"] = "world"
 
+@listener_3.on(LifecycleEvent)
+async def on_lifecycle_bus2():
+    print("on_lifecycle_bus2")
 
 async def main():
     bus = EventBus()
+    bus2 = EventBus()
 
     bus.register(listener_1)
     bus.register(listener_2)
+    bus2.register(listener_3)
+
+    bus.pipe(bus2)
 
     startup_event = StartupEvent()
     # just like `await asyncio.gather()`

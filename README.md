@@ -33,6 +33,7 @@ bus = EventBus()
 bus.register(listener)
 for i in range(5):
     # emit handlers in series
+    # use this if order is an issue for you
     await bus.emit_series(MyEvent(i))
 
     # or emit them concurrently
@@ -63,6 +64,24 @@ listener.off(MyEvent, on_my_event)
 bus.clear()
 # or
 bus.unregister(listener)
+```
+
+### Pipe buses
+```py
+child_bus = EventBus()
+
+bus.pipe(child_bus)
+# or
+child_bus.attach(bus)
+```
+
+After piping, events emitted on `bus` will also be emitted onto `child_bus`.
+
+### Unpipe buses
+```py
+bus.unpipe(child_bus)
+# or
+child_bus.detach(bus)
 ```
 
 ### Error Handing
