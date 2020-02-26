@@ -1,5 +1,5 @@
 # python-aioeventbus
-Simple, in-process, event-driven programming for Python based on asyncio.
+Simple, in-process, event-driven programming for Python3.7+ based on asyncio.
 
 ## Quick Start
 ```py
