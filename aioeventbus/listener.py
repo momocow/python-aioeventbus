@@ -1,10 +1,11 @@
 import asyncio
 from functools import partial
+from inspect import isclass
 from typing import Awaitable, Callable, Dict, Optional, Set, Type, TypeVar
 from weakref import WeakKeyDictionary
 
 from .event import Event
-from .types import EventClass, Handler
+from .typing import EventClass, Handler
 
 
 class Listener(WeakKeyDictionary, Dict[EventClass, Set[Handler]]):
@@ -28,15 +29,15 @@ class Listener(WeakKeyDictionary, Dict[EventClass, Set[Handler]]):
             raise ValueError("\"handler\" should be a coroutine function.")
 
         if event_cls not in self:
-            self[event_cls] = set()
-        self[event_cls].add(handler)
+            self[event_cls] = []
+        self[event_cls].append(handler)
         return handler
 
     def off(self,
-            event_cls: Optional[EventClass] = None,
+            event_cls: Optional[EventClass] = None, *,
             handler: Optional[Handler] = None
             ):
-        if not issubclass(event_cls, Event):
+        if event_cls is not None and not issubclass(event_cls, Event):
             raise TypeError("\"event_cls\" should be a subclass of Event.")
 
         try:
@@ -60,4 +61,20 @@ class Listener(WeakKeyDictionary, Dict[EventClass, Set[Handler]]):
                 else:
                     self.clear()
         except KeyError as exc:
-            raise KeyError((event_cls, handler)) from exc
+            raise LookupError((event_cls, handler)) from exc
+
+    def __bool__(self):
+        return any(bool(self[event_cls]) for event_cls in self)
+
+    def __repr__(self):
+        events = ", ".join(f"{event_cls.__name__}: {len(self[event_cls])}"
+                           for event_cls in self)
+        return "{cls} {{{events}}}".format(cls=self.__class__.__name__,
+                                           events=events)
+
+    def __contains__(self, o):
+        if asyncio.iscoroutinefunction(o):
+            return any(o in self[event_cls] for event_cls in self)
+        if isclass(o) and issubclass(o, Event):
+            return super().__contains__(o)
+        return False
