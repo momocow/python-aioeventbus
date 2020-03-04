@@ -51,7 +51,9 @@ class EventBus:
                              ) -> Optional[HandlerError]:
         try:
             # create handler context
-            await asyncio.create_task(handler())
+            ret = handler()
+            if asyncio.iscoroutine(ret):
+                await asyncio.create_task(ret)
         except Exception as exc:
             if return_exceptions:
                 try:

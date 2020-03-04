@@ -25,8 +25,8 @@ class Listener(WeakKeyDictionary, Dict[EventClass, Set[Handler]]):
         if handler is None:
             return partial(self.on, event_cls)
 
-        if not asyncio.iscoroutinefunction(handler):
-            raise ValueError("\"handler\" should be a coroutine function.")
+        if not callable(handler):
+            raise ValueError("\"handler\" should be a callable.")
 
         if event_cls not in self:
             self[event_cls] = []
