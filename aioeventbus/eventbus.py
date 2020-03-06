@@ -26,7 +26,9 @@ class EventBus:
         return self.__listeners.clear()
 
     def get_propagation_order(self, event: EventBase) -> Tuple[EventClass]:
-        return event.__class__.__mro__[:-1]  # exclude object class
+        return tuple(cls
+                     for cls in event.__class__.__mro__
+                     if issubclass(cls, Event))
 
     def get_handlers(self, event_cls: EventClass) -> Tuple[Handler]:
         return (h
@@ -60,7 +62,7 @@ class EventBus:
             for h in self.get_handlers(e):
                 try:
                     await self.__call_handler(h, event,
-                                                return_exceptions=False)
+                                              return_exceptions=False)
                 except (StopIteration, StopAsyncIteration):
                     return
 
@@ -86,7 +88,7 @@ class EventBus:
             for c in self.__children
         )
         returns = await asyncio.gather(*coros, *child_coros,
-                                        return_exceptions=return_exceptions)
+                                       return_exceptions=return_exceptions)
 
         return tuple(r for r in returns[:coros_len]
                      if isinstance(r, HandlerError)) + \
