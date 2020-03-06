@@ -6,7 +6,6 @@ from typing import List, Optional, Tuple, Type
 
 from .event import Event
 from .exceptions import HandlerError
-from .globals import event_v
 from .listener import Listener
 from .typing import EventBase, EventClass, Handler
 
@@ -34,16 +33,6 @@ class EventBus:
                 for l in self.__listeners
                 for h in l.get(event_cls, []))
 
-    @contextmanager
-    def __event_context(self, event: EventBase):
-        token = None
-        prev_event = event_v.get(None)
-        if prev_event is not event:
-            token = event_v.set(event)
-        yield
-        if token is not None:
-            event_v.reset(token)
-
     async def __call_handler(self,
                              handler: Handler,
                              event: EventBase, *,
@@ -67,17 +56,16 @@ class EventBus:
         if not isinstance(event, Event):
             raise TypeError("\"event\" should be an instance of Event.")
 
-        with self.__event_context(event):
-            for e in self.get_propagation_order(event):
-                for h in self.get_handlers(e):
-                    try:
-                        await self.__call_handler(h, event,
-                                                  return_exceptions=False)
-                    except (StopIteration, StopAsyncIteration):
-                        return
+        for e in self.get_propagation_order(event):
+            for h in self.get_handlers(e):
+                try:
+                    await self.__call_handler(h, event,
+                                                return_exceptions=False)
+                except (StopIteration, StopAsyncIteration):
+                    return
 
-            for c in self.__children:
-                await c.emit_series(event)
+        for c in self.__children:
+            await c.emit_series(event)
 
     async def emit_parallel(self, event: EventBase, *,
                             return_exceptions: bool = False
@@ -85,21 +73,20 @@ class EventBus:
         if not isinstance(event, Event):
             raise TypeError("\"event\" should be an instance of Event.")
 
-        with self.__event_context(event):
-            coros = list(
-                self.__call_handler(h, event,
-                                    return_exceptions=return_exceptions)
-                for e in self.get_propagation_order(event)
-                for h in self.get_handlers(e)
-            )
-            coros_len = len(coros)
-            child_coros = (
-                c.emit_parallel(event,
+        coros = list(
+            self.__call_handler(h, event,
                                 return_exceptions=return_exceptions)
-                for c in self.__children
-            )
-            returns = await asyncio.gather(*coros, *child_coros,
-                                           return_exceptions=return_exceptions)
+            for e in self.get_propagation_order(event)
+            for h in self.get_handlers(e)
+        )
+        coros_len = len(coros)
+        child_coros = (
+            c.emit_parallel(event,
+                            return_exceptions=return_exceptions)
+            for c in self.__children
+        )
+        returns = await asyncio.gather(*coros, *child_coros,
+                                        return_exceptions=return_exceptions)
 
         return tuple(r for r in returns[:coros_len]
                      if isinstance(r, HandlerError)) + \

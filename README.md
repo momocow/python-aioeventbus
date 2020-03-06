@@ -3,7 +3,7 @@ Simple, in-process, event-driven programming for Python3.7+ based on asyncio.
 
 ## Quick Start
 ```py
-from aioeventbus import event, Event, Listener
+from aioeventbus import Event, Listener
 ```
 
 ### Define an Event
@@ -20,7 +20,7 @@ expected_data = iter(range(5))
 
 # use decorator
 @listener.on(MyEvent)
-def on_my_event():
+def on_my_event(event):
     assert event.data == next(expected_data)
 
 # or function call
@@ -89,8 +89,6 @@ child_bus.detach(bus)
 #### LookupError
 This error is raised when calling `bus.off(event_cls, handler)` with any of `event_cls` or `handler` is not `None` and the lookup for the specified event or handler failed.
 
-#### InvalidState
-This error is raised when access the global context variable `event` outside the handler scope.
 
 #### HandlerError
 ```py

@@ -9,7 +9,3 @@ class HandlerError(Exception):
                          f"during handling {repr(event)}")
         self.handler = handler
         self.event = event
-
-
-class InvalidState(Exception):
-    pass
