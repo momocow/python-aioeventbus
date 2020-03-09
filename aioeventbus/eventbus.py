@@ -54,7 +54,7 @@ class EventBus:
             else:
                 raise HandlerError(handler, event) from exc
 
-    async def emit_series(self, event: EventBase):
+    async def emit_series(self, event: EventBase, *, propagate: bool = True):
         if not isinstance(event, Event):
             raise TypeError("\"event\" should be an instance of Event.")
 
@@ -66,11 +66,13 @@ class EventBus:
                 except (StopIteration, StopAsyncIteration):
                     return
 
-        for c in self.__children:
-            await c.emit_series(event)
+        if propagate:
+            for c in self.__children:
+                await c.emit_series(event)
 
     async def emit_parallel(self, event: EventBase, *,
-                            return_exceptions: bool = False
+                            return_exceptions: bool = False,
+                            propagate: bool = True
                             ) -> Tuple[HandlerError]:
         if not isinstance(event, Event):
             raise TypeError("\"event\" should be an instance of Event.")
@@ -82,11 +84,13 @@ class EventBus:
             for h in self.get_handlers(e)
         )
         coros_len = len(coros)
-        child_coros = (
-            c.emit_parallel(event,
-                            return_exceptions=return_exceptions)
-            for c in self.__children
-        )
+        child_coros = ()
+        if propagate:
+            child_coros = (
+                c.emit_parallel(event,
+                                return_exceptions=return_exceptions)
+                for c in self.__children
+            )
         returns = await asyncio.gather(*coros, *child_coros,
                                        return_exceptions=return_exceptions)
 
