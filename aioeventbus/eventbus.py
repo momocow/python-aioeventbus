@@ -12,8 +12,24 @@ from .typing import EventBase, EventClass, Handler
 
 class EventBus:
     def __init__(self):
+        self.__default_listener: Listener = Listener()
         self.__listeners: List[Listener] = []
         self.__children: List[EventBus] = []
+
+    def on(self, *args, **kwargs):
+        return self.__default_listener.on(*args, **kwargs)
+
+    def off(self, *args, **kwargs):
+        return self.__default_listener.off(*args, **kwargs)
+
+    async def wait(self, event_cls: EventClass) -> Event:
+        loop = asyncio.get_running_loop()
+        fut = loop.create_future()
+        set_result = fut.set_result
+        self.on(event_cls, set_result)
+        event = await fut
+        self.off(event_cls, set_result)
+        return event
 
     def register(self, *listeners: Listener):
         self.__listeners.extend(listeners)
@@ -32,7 +48,7 @@ class EventBus:
 
     def get_handlers(self, event_cls: EventClass) -> Tuple[Handler]:
         return (h
-                for l in self.__listeners
+                for l in (self.__default_listener, *self.__listeners)
                 for h in l.get(event_cls, []))
 
     async def __call_handler(self,
