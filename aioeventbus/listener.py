@@ -34,7 +34,7 @@ class Listener(WeakKeyDictionary, Dict[EventClass, Set[Handler]]):
         return handler
 
     def off(self,
-            event_cls: Optional[EventClass] = None, *,
+            event_cls: Optional[EventClass] = None,
             handler: Optional[Handler] = None
             ):
         if event_cls is not None and not issubclass(event_cls, Event):
