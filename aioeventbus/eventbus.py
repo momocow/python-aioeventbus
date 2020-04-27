@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import contextmanager
+from functools import partial
 from typing import List, Optional, Tuple, Type
 
 from .event import Event
@@ -25,11 +26,16 @@ class EventBus:
     async def wait(self, event_cls: EventClass) -> Event:
         loop = asyncio.get_running_loop()
         fut = loop.create_future()
-        set_result = fut.set_result
-        self.on(event_cls, set_result)
+        _wait_event = partial(self._handle_wait_event, fut)
+        self.on(event_cls, _wait_event)
         event = await fut
-        self.off(event_cls, set_result)
+        self.off(event_cls, _wait_event)
         return event
+
+    @staticmethod
+    def _handle_wait_event(fut, event):
+        if not fut.done():
+            fut.set_result(event)
 
     def register(self, *listeners: Listener):
         self.__listeners.extend(listeners)
